@@ -1,9 +1,7 @@
 // Process the whole game
 
-use std::collections::HashSet;
-use console;
-use termion;
 use crate::utils;
+use std::io::{self};
 
 const guess_chance: i32 = 6;
 
@@ -148,4 +146,32 @@ impl GameInfo{
 			},
 		}
 	}
+}
+
+pub fn game_runner(answer: &str, is_tty: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim());
+    if is_tty {
+        println!("Try to Make a Guess!");
+    }
+    
+    while gameinfo.game_is_running() {
+        let mut user_guess = String::new();
+        io::stdin().read_line(&mut user_guess)?;
+        let result = gameinfo.make_guess(user_guess.trim());
+        match result{
+            Ok(()) => gameinfo.print_process(is_tty), 
+            Err(()) => {
+                // print!("ERRERR!");
+                // print!("{}",gameinfo.game_is_running());
+                // assert!(false);
+                if is_tty{
+                    println!("Wrong Input! Please re-entering a new word!");
+                }
+                else{
+                    println!("INVALID");
+                }
+            }
+        }
+    }
+	Ok(())
 }

@@ -1,4 +1,3 @@
-use std::{io::{self, Write, Read}, collections::HashMap};
 pub fn get_color_rank(val: char) -> Option<i32> {
 	match val {
 		'G' => Some(3), 
