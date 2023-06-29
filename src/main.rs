@@ -1,7 +1,7 @@
 use console;
 use std::{io::{self, Write}};
 use clap::Parser;
-use rand::{Rng, seq::SliceRandom};
+use rand::{Rng, seq::SliceRandom, SeedableRng};
 
 pub mod interact_model;
 mod builtin_words;
@@ -11,8 +11,8 @@ use utils::Stats;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
 struct Args{
-    #[arg(short, long, default_value_t = String::new())]
-    word: String,
+    #[arg(short, long)]
+    word: Option<String>,
 
     #[arg(short, long, default_value_t = false)]
     random: bool,
@@ -22,12 +22,35 @@ struct Args{
 
     #[arg(short='t', long, default_value_t = false)]
     stats: bool,
+
+    #[arg(short, long)]
+    day: Option<usize>,
+
+    #[arg(short, long)]
+    seed: Option<u64>, 
+}
+
+impl Args{
+    fn have_conflicts(&self) -> bool {
+        if self.random && self.word.is_some(){
+            return true;
+        }
+        if self.word.is_some() {
+            if self.day.is_some() || self.seed.is_some() {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 /// The main function for the Wordle game, implement your own logic here
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    let mut rng = rand::thread_rng();
+    if args.have_conflicts(){
+        return Err("Args are Conflice".into());
+    }
+    let mut rng = rand::rngs::StdRng::seed_from_u64(args.seed.unwrap_or(114514 as u64));
 
     let is_tty = atty::is(atty::Stream::Stdout);
 
@@ -46,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         select_order[i] = i;
     }
     select_order.shuffle(&mut rng);
-    let mut idx = 0_usize;
+    let mut idx = args.day.unwrap_or(1)-1;
 
     let mut stats = Stats::new();
 
@@ -54,14 +77,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut answer = String::new();
         if args.random {
             // random 
-            assert_eq!(args.word.len(), 0);
             assert!(idx < select_order.len());
             answer = String::from(builtin_words::FINAL[select_order[idx]]);
             idx += 1;
         }
-        else if args.word.len() > 0 {
+        else if args.word.is_some() {
             // read from args
-            answer = args.word.clone();
+            answer = args.word.clone().unwrap();
         }
         else{
             if is_tty {
@@ -78,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             stats.print_result(is_tty);
         }
 
-        if args.word.len() > 0 {
+        if args.word.is_some() {
             break;
         }
         

@@ -121,7 +121,7 @@ impl GameInfo{
 		if flag{
 			self.game_status = GameStatus::Success;
 		}
-		if self.guess_history.len() == (GUESS_CHANCE as usize){
+		else if self.guess_history.len() == (GUESS_CHANCE as usize){
 			self.game_status = GameStatus::Fail;
 		}
 		return Ok(());
