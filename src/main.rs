@@ -1,11 +1,12 @@
 use console;
-use std::io::{self, Write};
+use std::{io::{self, Write}};
 use clap::Parser;
 use rand::{Rng, seq::SliceRandom};
 
 pub mod interact_model;
 mod builtin_words;
 mod utils;
+use utils::Stats;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
@@ -47,6 +48,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     select_order.shuffle(&mut rng);
     let mut idx = 0_usize;
 
+    let mut stats = Stats::new();
+
     loop {
         let mut answer = String::new();
         if args.random {
@@ -68,7 +71,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             io::stdin().read_line(&mut answer)?;
         }
 
-        interact_model::game_runner(&answer, is_tty, args.difficult)?;
+        let result = interact_model::game_runner(
+            &answer, is_tty, args.difficult, &mut stats);
+        stats.add_game(result.unwrap());
+        if args.stats{
+            stats.print_result(is_tty);
+        }
+
         if args.word.len() > 0 {
             break;
         }

@@ -1,11 +1,11 @@
 // Process the whole game
 
-use crate::utils;
+use crate::utils::{self, Stats};
 use std::io::{self};
 
-const guess_chance: i32 = 6;
+const GUESS_CHANCE: i32 = 6;
 
-enum GameStatus{
+pub enum GameStatus{
 	Running,
 	Success,
 	Fail,
@@ -121,7 +121,7 @@ impl GameInfo{
 		if flag{
 			self.game_status = GameStatus::Success;
 		}
-		if self.guess_history.len() == (guess_chance as usize){
+		if self.guess_history.len() == (GUESS_CHANCE as usize){
 			self.game_status = GameStatus::Fail;
 		}
 		return Ok(());
@@ -163,7 +163,7 @@ impl GameInfo{
 		match self.game_status{
 			GameStatus::Running => {
 				if is_tty {
-					println!("You have {} more chance, have fun!", guess_chance - self.guess_history.len() as i32);
+					println!("You have {} more chance, have fun!", GUESS_CHANCE - self.guess_history.len() as i32);
 					println!("Try to Make a Guess!");
 				}
 			},
@@ -172,7 +172,7 @@ impl GameInfo{
 					println!("Good Job, You Win!");
 				}
 				else{
-					println!("CORRECT {}\n", self.guess_history.len());
+					println!("CORRECT {}", self.guess_history.len());
 				}
 			},
 			GameStatus::Fail => {
@@ -189,13 +189,14 @@ impl GameInfo{
 					for ch in &self.guess_answer{
 						print!("{}", ch.to_ascii_uppercase());
 					}
+					print!("\n");
 				}
 			},
 		}
 	}
 }
 
-pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut Stats) -> Option<bool> {
 	let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
 	if is_tty {
 		println!("Try to Make a Guess!");
@@ -203,13 +204,17 @@ pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool) -> Result<(),
 	
 	while gameinfo.game_is_running() {
 		let mut user_guess = String::new();
-		io::stdin().read_line(&mut user_guess)?;
+		let tmp = io::stdin().read_line(&mut user_guess);
+		assert!(tmp.is_ok());
 		let result = gameinfo.make_guess(user_guess.trim());
 		match result{
-			Ok(()) => gameinfo.print_process(is_tty), 
+			Ok(()) => {
+				gameinfo.print_process(is_tty);
+				stats.add_guess(String::from(user_guess.trim()));
+			}
 			Err(()) => {
 				if is_tty{
-					println!("Wrong Input! Please re-entering a new VAILD word!");
+					println!("Wrong Input! Please re-entering a new VALID word!");
 				}
 				else{
 					println!("INVALID");
@@ -217,5 +222,10 @@ pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool) -> Result<(),
 			}
 		}
 	}
-	Ok(())
+
+	match gameinfo.game_status {
+		GameStatus::Running => None, 
+		GameStatus::Success => Some(true), 
+		GameStatus::Fail => Some(false),
+	}
 }
