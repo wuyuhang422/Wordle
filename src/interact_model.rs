@@ -16,11 +16,12 @@ pub struct GameInfo{
 	guess_answer: Vec<char>,
 	guess_history: Vec<(String,String)>,
 	game_status: GameStatus,
+	is_difficult: bool,
 }
 
 impl GameInfo{
-	pub fn new(answer: &str) -> GameInfo {
-		GameInfo { keyboard_status: ['X'; 26], guess_answer: String::from(answer).chars().collect(), guess_history: Vec::new(), game_status: GameStatus::Running}
+	pub fn new(answer: &str, is_difficult: bool) -> GameInfo {
+		GameInfo { keyboard_status: ['X'; 26], guess_answer: String::from(answer).chars().collect(), guess_history: Vec::new(), game_status: GameStatus::Running, is_difficult: is_difficult}
 	}
 
 	pub fn game_is_running(&self) -> bool {
@@ -36,11 +37,47 @@ impl GameInfo{
 		}
 	}
 
+	fn difficult_vaild(&mut self, user_input: &str) -> bool {
+		match self.is_difficult {
+			false => true,
+			true => {
+				if self.guess_history.len() == 0{
+					true
+				}
+				else{
+					let (last_input, last_color) = self.guess_history.last().unwrap();
+					let tmp = last_input.chars().zip(last_color.chars());
+					let _tmp = String::from(user_input);
+					let tmp = tmp.zip(_tmp.chars());
+					let mut last_cnt = [0; 26];
+					let mut now_cnt = [0; 26];
+					for ((last_char, last_col), now_char) in tmp {
+						if last_col == 'G' && last_char != now_char {
+							return false;
+						}
+						if last_col == 'Y' {
+							last_cnt[(last_char as usize) - ('a' as usize)] += 1;
+						}
+						if last_col != 'G' {
+							now_cnt[(now_char as usize) - ('a' as usize)] += 1;
+						}
+					}
+					for i in 0_usize..26_usize {
+						if now_cnt[i] < last_cnt[i]{
+							return false;
+						}
+					}
+					true
+				}
+			}
+		}
+	}
+
 	pub fn make_guess(&mut self, user_input: &str) -> Result<(),()> {
 		/* We assume that guess_answer are vaild
 		give in a user_guess, update the status for keyboard, screen, ...
 		*/
-		if !utils::vaild(user_input){
+		if !(utils::vaild(user_input) && self.difficult_vaild(user_input)){
 			return Err(())
 		}
 		let user_input = String::from(user_input);
@@ -148,8 +185,8 @@ impl GameInfo{
 	}
 }
 
-pub fn game_runner(answer: &str, is_tty: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim());
+pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
     if is_tty {
         println!("Try to Make a Guess!");
     }

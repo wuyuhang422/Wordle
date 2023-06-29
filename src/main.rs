@@ -15,6 +15,9 @@ struct Args{
 
     #[arg(short, long, default_value_t = false)]
     random: bool,
+
+    #[arg(short='D', long, default_value_t = false)]
+    difficult: bool,
 }
 
 /// The main function for the Wordle game, implement your own logic here
@@ -51,5 +54,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         io::stdin().read_line(&mut answer)?;
     }
 
-    interact_model::game_runner(&answer, is_tty)
+    interact_model::game_runner(&answer, is_tty, args.difficult)
 }
