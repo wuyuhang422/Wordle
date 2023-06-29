@@ -88,13 +88,23 @@ impl GameInfo{
 		for ch in &self.guess_answer{
 			cnt[(*ch as usize) - ('a' as usize)] += 1;
 		}
+		/*  fix: you should firstly consider green character.
+			example:
+			answer = START
+			user_input = ABAND
+		*/
+		for i in 0..t.len(){
+			let id = (t[i] as usize) - ('a' as usize);
+			if t[i] == self.guess_answer[i]{
+				cnt[id] -= 1;
+			}
+		}
 		for i in 0..t.len(){
 			// println!("{}, {}",t[i] as usize, 'a' as usize);
 			let id = (t[i] as usize) - ('a' as usize);
 			let mut res: char = 'X';
 			if t[i] == self.guess_answer[i]{
 				res = 'G';
-				cnt[id] -= 1;
 			}
 			else if cnt[id] > 0{
 				res = 'Y';
@@ -186,29 +196,26 @@ impl GameInfo{
 }
 
 pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
-    if is_tty {
-        println!("Try to Make a Guess!");
-    }
-    
-    while gameinfo.game_is_running() {
-        let mut user_guess = String::new();
-        io::stdin().read_line(&mut user_guess)?;
-        let result = gameinfo.make_guess(user_guess.trim());
-        match result{
-            Ok(()) => gameinfo.print_process(is_tty), 
-            Err(()) => {
-                // print!("ERRERR!");
-                // print!("{}",gameinfo.game_is_running());
-                // assert!(false);
-                if is_tty{
-                    println!("Wrong Input! Please re-entering a new word!");
-                }
-                else{
-                    println!("INVALID");
-                }
-            }
-        }
-    }
+	let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
+	if is_tty {
+		println!("Try to Make a Guess!");
+	}
+	
+	while gameinfo.game_is_running() {
+		let mut user_guess = String::new();
+		io::stdin().read_line(&mut user_guess)?;
+		let result = gameinfo.make_guess(user_guess.trim());
+		match result{
+			Ok(()) => gameinfo.print_process(is_tty), 
+			Err(()) => {
+				if is_tty{
+					println!("Wrong Input! Please re-entering a new VAILD word!");
+				}
+				else{
+					println!("INVALID");
+				}
+			}
+		}
+	}
 	Ok(())
 }
