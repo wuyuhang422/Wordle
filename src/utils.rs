@@ -23,18 +23,69 @@ pub fn print_with_color(ch: char, color: char) -> (){
 		_ => assert!(false)
 	}
 }
+use std::{collections::HashSet, fs::{File, read_to_string}, io::{Read, self}};
+pub struct WordDict {
+	pub final_list: Vec<String>, 
+	acceptable_list: Vec<String>,
+	final_set: HashSet<String>, 
+	acceptable_set: HashSet<String>
+}
 
 use crate::builtin_words;
 
-pub fn vaild(user_input: &str) -> bool {
-	// TODO: use hashtable to accelerate
-	for val in builtin_words::ACCEPTABLE {
-		if **val == *user_input{
-			return true;
+impl WordDict {
+	pub fn new() -> WordDict {
+		WordDict { final_list: Vec::new(), acceptable_list: Vec::new(), final_set: HashSet::new(), acceptable_set: HashSet::new() }
+	}
+
+	pub fn vaild(&self, user_input: &str) -> bool {	
+		// TODO: use hashtable to accelerate
+		return self.acceptable_set.contains(&String::from(user_input));
+	}
+
+	pub fn build(&mut self, final_address: Option<String>, acceptable_address: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+		if acceptable_address.is_none() {
+			for val in builtin_words::ACCEPTABLE {
+				self.acceptable_list.push(String::from(*val));
+			}
+		}
+		else{
+			let address = acceptable_address.unwrap();
+			for line in read_to_string(address).unwrap().lines(){
+				let word = line.trim().to_ascii_lowercase();
+				self.acceptable_list.push(word);
+			}
+			
+		}
+		if final_address.is_none() {
+			for val in builtin_words::FINAL {
+				self.final_list.push(String::from(*val));
+			}
+		}
+		else{
+			let address = final_address.unwrap();
+			for line in read_to_string(address).unwrap().lines(){
+				let word = line.trim().to_ascii_lowercase();
+				self.final_list.push(word);
+			}
+		}
+		self.final_set = self.final_list.clone().into_iter().collect::<HashSet<String>>();
+		self.acceptable_set = self.acceptable_list.clone().into_iter().collect::<HashSet<String>>();
+		if self.acceptable_list.len() != self.acceptable_set.len() {
+			Err("acceptable words table have REPEATED words.".into())
+		}
+		else if self.final_list.len() != self.final_set.len() {
+			Err("final words table have REPEATED words.".into())
+		}
+		else if !self.final_set.is_subset(&self.acceptable_set){
+			Err("final set is not a subset of acceptable set".into())
+		}
+		else{
+			Ok(())
 		}
 	}
-	return false;
 }
+
 use std::collections::HashMap;
 pub struct Stats{
     wins: i32,

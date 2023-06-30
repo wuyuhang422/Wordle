@@ -4,8 +4,8 @@ use clap::Parser;
 use rand::{Rng, seq::SliceRandom, SeedableRng};
 
 pub mod interact_model;
-mod builtin_words;
 mod utils;
+mod builtin_words;
 use utils::Stats;
 
 #[derive(Parser, Debug)]
@@ -28,6 +28,12 @@ struct Args{
 
     #[arg(short, long)]
     seed: Option<u64>, 
+
+    #[arg(short, long)]
+    final_set: Option<String>,
+
+    #[arg(short, long)]
+    acceptable_set: Option<String>
 }
 
 impl Args{
@@ -48,8 +54,12 @@ impl Args{
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     if args.have_conflicts(){
-        return Err("Args are Conflice".into());
+        return Err("Args are conflict".into());
     }
+
+    let mut word_dict = utils::WordDict::new();
+    word_dict.build(args.final_set, args.acceptable_set)?;
+    
     let mut rng = rand::rngs::StdRng::seed_from_u64(args.seed.unwrap_or(114514 as u64));
 
     let is_tty = atty::is(atty::Stream::Stdout);
@@ -63,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Welcome to Wordle, {}!", line.trim());
     }
 
-    let len = builtin_words::FINAL.len();
+    let len = word_dict.final_list.len();
     let mut select_order = vec![0_usize; len];
     for i in 0..len {
         select_order[i] = i;
@@ -78,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.random {
             // random 
             assert!(idx < select_order.len());
-            answer = String::from(builtin_words::FINAL[select_order[idx]]);
+            answer = word_dict.final_list[select_order[idx]].clone();
             idx += 1;
         }
         else if args.word.is_some() {
@@ -94,7 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let result = interact_model::game_runner(
-            &answer, is_tty, args.difficult, &mut stats);
+            &answer, is_tty, args.difficult, &mut stats, &word_dict);
         stats.add_game(result.unwrap());
         if args.stats{
             stats.print_result(is_tty);

@@ -73,11 +73,11 @@ impl GameInfo{
 		}
 	}
 
-	pub fn make_guess(&mut self, user_input: &str) -> Result<(),()> {
+	pub fn make_guess(&mut self, user_input: &str, word_dict: &utils::WordDict) -> Result<(),()> {
 		/* We assume that guess_answer are vaild
 		give in a user_guess, update the status for keyboard, screen, ...
 		*/
-		if !(utils::vaild(user_input) && self.difficult_vaild(user_input)){
+		if !(word_dict.vaild(user_input) && self.difficult_vaild(user_input)){
 			return Err(())
 		}
 		let user_input = String::from(user_input);
@@ -196,7 +196,7 @@ impl GameInfo{
 	}
 }
 
-pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut Stats) -> Option<bool> {
+pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut Stats, word_dict: &utils::WordDict) -> Option<bool> {
 	let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
 	if is_tty {
 		println!("Try to Make a Guess!");
@@ -206,7 +206,7 @@ pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut S
 		let mut user_guess = String::new();
 		let tmp = io::stdin().read_line(&mut user_guess);
 		assert!(tmp.is_ok());
-		let result = gameinfo.make_guess(user_guess.trim());
+		let result = gameinfo.make_guess(user_guess.trim(), word_dict);
 		match result{
 			Ok(()) => {
 				gameinfo.print_process(is_tty);
