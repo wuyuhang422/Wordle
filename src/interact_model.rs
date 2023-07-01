@@ -1,7 +1,7 @@
 // Process the whole game
 
 use crate::utils::{self, Stats};
-use std::io::{self};
+use std::io;
 use crate::json_parser::Games;
 
 const GUESS_CHANCE: i32 = 6;
@@ -103,17 +103,16 @@ impl GameInfo{
 		for i in 0..t.len(){
 			// println!("{}, {}",t[i] as usize, 'A' as usize);
 			let id = (t[i] as usize) - ('A' as usize);
-			let mut res: char = 'X';
-			if t[i] == self.guess_answer[i]{
-				res = 'G';
+			let res = if t[i] == self.guess_answer[i]{
+				'G'
 			}
 			else if cnt[id] > 0{
-				res = 'Y';
 				cnt[id] -= 1;
+				'Y'
 			}
 			else{
-				res = 'R';
-			}
+				'R'
+			};
 			flag &= res == 'G';
 			self.change_keyboard_status(id, res);
 			guess_status.push(res);

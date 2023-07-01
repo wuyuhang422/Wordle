@@ -23,7 +23,7 @@ pub fn print_with_color(ch: char, color: char) -> (){
 		_ => assert!(false)
 	}
 }
-use std::{collections::HashSet, fs::{File, read_to_string}, io::{Read, self}};
+use std::{collections::HashSet, fs::{read_to_string}};
 pub struct WordDict {
 	pub final_list: Vec<String>, 
 	acceptable_list: Vec<String>,

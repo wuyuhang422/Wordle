@@ -1,14 +1,13 @@
 use console;
-use std::{io::{self, Write}, fs::{self, read_to_string}, os::macos::raw};
+use std::{io::{self, Write}, fs::{self, read_to_string}};
 use clap::Parser;
-use rand::{Rng, seq::SliceRandom, SeedableRng};
+use rand::{seq::SliceRandom, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 pub mod interact_model;
 mod utils;
 mod builtin_words;
 mod json_parser;
-use utils::Stats;
 use json_parser::{Gamejson, Games, read_json};
 
 #[derive(Parser, Debug)]

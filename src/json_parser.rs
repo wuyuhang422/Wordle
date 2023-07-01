@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::utils::Stats;
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap};
 
 #[derive(Serialize, Deserialize)]
 pub struct Gamejson{
