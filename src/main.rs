@@ -1,7 +1,8 @@
 use console;
-use std::{io::{self, Write}, fs::{self, read_to_string}};
+use std::{io::{self, Write}, fs::{self, read_to_string}, os::macos::raw};
 use clap::Parser;
 use rand::{Rng, seq::SliceRandom, SeedableRng};
+use serde::{Deserialize, Serialize};
 
 pub mod interact_model;
 mod utils;
@@ -11,6 +12,7 @@ use utils::Stats;
 use json_parser::{Gamejson, Games, read_json};
 
 #[derive(Parser, Debug)]
+#[derive(Serialize, Deserialize)]
 #[command(author, version, about, long_about=None)]
 struct Args{
     #[arg(short, long)]
@@ -39,6 +41,9 @@ struct Args{
 
     #[arg(short='S', long)]
     state: Option<String>,
+
+    #[arg(short, long)]
+    config: Option<String>,
 }
 
 impl Args{
@@ -53,14 +58,58 @@ impl Args{
         }
         false
     }
+
+    fn update(&mut self, from_json: Args) {
+        if self.word.is_none(){
+            self.word = from_json.word;
+        }
+        if !self.random{
+            self.random = from_json.random;
+        }
+        if !self.difficult{
+            self.difficult = from_json.difficult;
+        }
+        if !self.stats{
+            self.stats = from_json.stats;
+        }
+        if self.day.is_none(){
+            self.day = from_json.day;
+        }
+        if self.seed.is_none(){
+            self.seed = from_json.seed;
+        }
+        if self.final_set.is_none(){
+            self.final_set = from_json.final_set;
+        }
+        if self.acceptable_set.is_none(){
+            self.acceptable_set = from_json.acceptable_set;
+        }
+        if self.state.is_none(){
+            self.state = from_json.state;
+        }
+        if self.config.is_none(){
+            self.config = from_json.config;
+        }
+    }
 }
 
 /// The main function for the Wordle game, implement your own logic here
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    let mut args = Args::parse();
+    if args.config.is_some() {
+        let raw_json = read_to_string(args.config.as_ref().unwrap());
+        if raw_json.is_ok(){
+            match serde_json::from_str(&raw_json.unwrap()){
+                Ok(parsed) => args.update(parsed),
+                Err(_) => (),
+            }
+        }
+    }
     if args.have_conflicts(){
         return Err("Args are conflict".into());
     }
+
+    // eprintln!("Args: {}", args.acceptable_set.clone().unwrap_or(String::from("None")));
 
     let mut word_dict = utils::WordDict::new();
     word_dict.build(args.final_set, args.acceptable_set)?;
@@ -136,7 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let json = serde_json::to_string(&gamejson).unwrap();
             fs::write(args.state.as_ref().unwrap(), json)?;
         }
-        
+
         if args.stats{
             stats.print_result(is_tty);
         }
