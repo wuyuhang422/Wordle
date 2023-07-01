@@ -2,6 +2,7 @@
 
 use crate::utils::{self, Stats};
 use std::io::{self};
+use crate::json_parser::Games;
 
 const GUESS_CHANCE: i32 = 6;
 
@@ -56,10 +57,10 @@ impl GameInfo{
 							return false;
 						}
 						if last_col == 'Y' {
-							last_cnt[(last_char as usize) - ('a' as usize)] += 1;
+							last_cnt[(last_char as usize) - ('A' as usize)] += 1;
 						}
 						if last_col != 'G' {
-							now_cnt[(now_char as usize) - ('a' as usize)] += 1;
+							now_cnt[(now_char as usize) - ('A' as usize)] += 1;
 						}
 					}
 					for i in 0_usize..26_usize {
@@ -86,7 +87,7 @@ impl GameInfo{
 		let mut flag = true;
 		let mut cnt = [0; 26];
 		for ch in &self.guess_answer{
-			cnt[(*ch as usize) - ('a' as usize)] += 1;
+			cnt[(*ch as usize) - ('A' as usize)] += 1;
 		}
 		/*  fix: you should firstly consider green character.
 			example:
@@ -94,14 +95,14 @@ impl GameInfo{
 			user_input = ABAND
 		*/
 		for i in 0..t.len(){
-			let id = (t[i] as usize) - ('a' as usize);
+			let id = (t[i] as usize) - ('A' as usize);
 			if t[i] == self.guess_answer[i]{
 				cnt[id] -= 1;
 			}
 		}
 		for i in 0..t.len(){
-			// println!("{}, {}",t[i] as usize, 'a' as usize);
-			let id = (t[i] as usize) - ('a' as usize);
+			// println!("{}, {}",t[i] as usize, 'A' as usize);
+			let id = (t[i] as usize) - ('A' as usize);
 			let mut res: char = 'X';
 			if t[i] == self.guess_answer[i]{
 				res = 'G';
@@ -196,7 +197,8 @@ impl GameInfo{
 	}
 }
 
-pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut Stats, word_dict: &utils::WordDict) -> Option<bool> {
+pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, 
+	stats: &mut Stats, word_dict: &utils::WordDict, game: &mut Games) -> Option<bool> {
 	let mut gameinfo = crate::interact_model::GameInfo::new(answer.trim(), is_difficult);
 	if is_tty {
 		println!("Try to Make a Guess!");
@@ -206,11 +208,13 @@ pub fn game_runner(answer: &str, is_tty: bool, is_difficult: bool, stats: &mut S
 		let mut user_guess = String::new();
 		let tmp = io::stdin().read_line(&mut user_guess);
 		assert!(tmp.is_ok());
-		let result = gameinfo.make_guess(user_guess.trim(), word_dict);
+		user_guess = String::from(user_guess.trim()).to_uppercase();
+		let result = gameinfo.make_guess(&user_guess, word_dict);
 		match result{
 			Ok(()) => {
 				gameinfo.print_process(is_tty);
-				stats.add_guess(String::from(user_guess.trim()));
+				game.add_guess(user_guess.clone());
+				stats.add_guess(user_guess.clone());
 			}
 			Err(()) => {
 				if is_tty{

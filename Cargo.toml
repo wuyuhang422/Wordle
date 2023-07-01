@@ -12,6 +12,7 @@ console = "0.15"
 termion = "*"
 clap = { version = "4.3.9", features = ["derive"] }
 rand = "0.8.5"
+serde = { version = "1.0.164", features = ["derive"] }
 
 [dev-dependencies]
 lazy_static = "1.0"

@@ -46,26 +46,26 @@ impl WordDict {
 	pub fn build(&mut self, final_address: Option<String>, acceptable_address: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
 		if acceptable_address.is_none() {
 			for val in builtin_words::ACCEPTABLE {
-				self.acceptable_list.push(String::from(*val));
+				self.acceptable_list.push(String::from(*val).to_ascii_uppercase());
 			}
 		}
 		else{
 			let address = acceptable_address.unwrap();
 			for line in read_to_string(address).unwrap().lines(){
-				let word = line.trim().to_ascii_lowercase();
+				let word = line.trim().to_ascii_uppercase();
 				self.acceptable_list.push(word);
 			}
 			
 		}
 		if final_address.is_none() {
 			for val in builtin_words::FINAL {
-				self.final_list.push(String::from(*val));
+				self.final_list.push(String::from(*val).to_ascii_uppercase());
 			}
 		}
 		else{
 			let address = final_address.unwrap();
 			for line in read_to_string(address).unwrap().lines(){
-				let word = line.trim().to_ascii_lowercase();
+				let word = line.trim().to_ascii_uppercase();
 				self.final_list.push(word);
 			}
 		}
@@ -96,8 +96,10 @@ pub struct Stats{
 }
 
 impl Stats{
-    pub fn new() -> Stats {
-        Stats { wins: 0, total: 0, attempts: 0, buffer: 0, guess_history: HashMap::new() }
+    pub fn new(wins: Option<i32>, total: Option<i32>, attempts: Option<i32>, buffer: Option<i32>, guess_history: Option<HashMap<String, i32>>) -> Stats {
+        Stats { wins: wins.unwrap_or(0), total: total.unwrap_or(0),
+			 attempts: attempts.unwrap_or(0), buffer: buffer.unwrap_or(0), 
+			 guess_history: guess_history.unwrap_or(HashMap::new()) }
     }
 
     pub fn add_game(&mut self, result: bool){

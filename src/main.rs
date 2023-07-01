@@ -1,12 +1,14 @@
 use console;
-use std::{io::{self, Write}};
+use std::{io::{self, Write}, fs::{self, read_to_string}};
 use clap::Parser;
 use rand::{Rng, seq::SliceRandom, SeedableRng};
 
 pub mod interact_model;
 mod utils;
 mod builtin_words;
+mod json_parser;
 use utils::Stats;
+use json_parser::{Gamejson, Games, read_json};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
@@ -33,7 +35,10 @@ struct Args{
     final_set: Option<String>,
 
     #[arg(short, long)]
-    acceptable_set: Option<String>
+    acceptable_set: Option<String>,
+
+    #[arg(short='S', long)]
+    state: Option<String>,
 }
 
 impl Args{
@@ -59,7 +64,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut word_dict = utils::WordDict::new();
     word_dict.build(args.final_set, args.acceptable_set)?;
-    
+
+    let mut gamejson = if args.state.is_some(){
+        let raw_json = read_to_string(args.state.as_ref().unwrap());
+        if raw_json.is_ok(){
+            read_json(&raw_json.unwrap())
+        }
+        else{
+            Gamejson::new()
+        }
+    }
+    else{
+        Gamejson::new()
+    };
+
     let mut rng = rand::rngs::StdRng::seed_from_u64(args.seed.unwrap_or(114514 as u64));
 
     let is_tty = atty::is(atty::Stream::Stdout);
@@ -81,7 +99,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     select_order.shuffle(&mut rng);
     let mut idx = args.day.unwrap_or(1)-1;
 
-    let mut stats = Stats::new();
+    // let mut stats = Stats::new(None, None, None, None, None);
+    let mut stats = gamejson.to_stats();
 
     loop {
         let mut answer = String::new();
@@ -103,9 +122,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             io::stdin().read_line(&mut answer)?;
         }
 
+        answer = answer.to_uppercase();
+
+        let mut game = Games::new();
+        game.set_answer(answer.clone());
+
         let result = interact_model::game_runner(
-            &answer, is_tty, args.difficult, &mut stats, &word_dict);
+            &answer, is_tty, args.difficult, &mut stats, &word_dict, &mut game);
         stats.add_game(result.unwrap());
+        gamejson.add_games(game);
+        if args.state.is_some() {
+            // save args to file
+            let json = serde_json::to_string(&gamejson).unwrap();
+            fs::write(args.state.as_ref().unwrap(), json)?;
+        }
+        
         if args.stats{
             stats.print_result(is_tty);
         }
